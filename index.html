@@ -5,109 +5,68 @@
 <title>Graph Paper</title>
 <link rel="canonical" href="https://benlubar.github.io/graph-paper/">
 <script>
-const CLIENT_ID = '477142404112-nupku65oo2pis2ajtdqobp53ek38dofc.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+var gapi_client_load = function() {
+	var CLIENT_ID = '477142404112-nupku65oo2pis2ajtdqobp53ek38dofc.apps.googleusercontent.com';
+	var SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.install'];
 
-/**
- * Called when the client library is loaded to start the auth flow.
- */
-function handleClientLoad() {
-	window.setTimeout(checkAuth, 1);
-}
-
-/**
- * Check if the current user has authorized the application.
- */
-function checkAuth() {
-	gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': true}, handleAuthResult);
-}
-
-/**
- * Called when authorization server replies.
- *
- * @param {Object} authResult Authorization result.
- */
-function handleAuthResult(authResult) {
-	var authButton = document.getElementById('authorizeButton');
-	var filePicker = document.getElementById('filePicker');
-	authButton.style.display = 'none';
-	filePicker.style.display = 'none';
-	if (authResult && !authResult.error) {
-		// Access token has been successfully retrieved, requests can be sent to the API.
-		filePicker.style.display = 'block';
-		filePicker.onchange = uploadFile;
-	} else {
-		// No access token could be retrieved, show the button to start the authorization flow.
-		authButton.style.display = 'block';
-		authButton.onclick = function() {
-			gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': false}, handleAuthResult);
-		};
+	function check_auth() {
+		gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': true}, handle_auth);
 	}
-}
 
-/**
- * Start the file upload.
- *
- * @param {Object} evt Arguments from the file selector.
- */
-function uploadFile(evt) {
-	gapi.client.load('drive', 'v2', function() {
-		var file = evt.target.files[0];
-		insertFile(file);
-	});
-}
-
-/**
- * Insert new file.
- *
- * @param {File} fileData File object to read data from.
- * @param {Function} callback Function to call when the request is complete.
- */
-function insertFile(fileData, callback) {
-	const boundary = '-------314159265358979323846';
-	const delimiter = "\r\n--" + boundary + "\r\n";
-	const close_delim = "\r\n--" + boundary + "--";
-
-	var reader = new FileReader();
-	reader.readAsBinaryString(fileData);
-	reader.onload = function(e) {
-		var contentType = fileData.type || 'application/octet-stream';
-		var metadata = {
-			'title': fileData.name,
-			'mimeType': contentType
-		};
-
-		var base64Data = btoa(reader.result);
-		var multipartRequestBody = delimiter +
-			'Content-Type: application/json\r\n\r\n' +
-			JSON.stringify(metadata) + delimiter +
-			'Content-Type: ' + contentType + '\r\n' +
-			'Content-Transfer-Encoding: base64\r\n' +
-			'\r\n' + base64Data + close_delim;
-
-		var request = gapi.client.request({
-			'path': '/upload/drive/v2/files',
-			'method': 'POST',
-			'params': {'uploadType': 'multipart'},
-			'headers': {
-				'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'
-			},
-			'body': multipartRequestBody
-		});
-		if (!callback) {
-			callback = function(file) {
-				console.log(file);
+	function handle_auth(result) {
+		var button = document.getElementById('authorize');
+		button.style.display = 'none';
+		if (result && !result.error) {
+			// Access token has been successfully retrieved, requests can be sent to the API.
+			gapi.client.load('drive', 'v2', ready);
+		} else {
+			// No access token could be retrieved, show the button to start the authorization flow.
+			button.style.display = 'block';
+			button.onclick = function() {
+				gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': false}, handle_auth);
 			};
 		}
-		request.execute(callback);
 	}
-}
+
+	function ready() {
+		get_file_list(gapi.drive.files.list(), []);
+	}
+
+	function get_file_list(request, result) {
+		request.execute(function(response) {
+			result = result.concat(response.items);
+			if (response['nextPageToken']) {
+				request = gapi.client.drive.files.list({
+					'pageToken': response['nextPagetoken']
+				});
+				get_file_list(request, result);
+			} else {
+				got_file_list(result);
+			}
+		});
+	}
+
+	function got_file_list(files) {
+		console.log(files);
+	}
+
+	return function() {
+		setTimeout(check_auth, 1);
+	};
+}();
 </script>
-<script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
+<script src="https://apis.google.com/js/client.js?onload=gapi_client_load"></script>
 </head>
 <body>
-<!--Add a file picker for the user to start the upload process -->
-<input type="file" id="filePicker" style="display: none">
-<input type="button" id="authorizeButton" style="display: none" value="Authorize">
+<button id="authorize" style="display: none">Authorize</button>
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-41367436-1', 'auto');
+ga('send', 'pageview');
+</script>
 </body>
 </html>
