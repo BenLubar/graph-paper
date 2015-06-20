@@ -29,7 +29,7 @@ var gapi_client_load = function() {
 	}
 
 	function ready() {
-		get_file_list(gapi.drive.files.list(), []);
+		get_file_list(gapi.client.drive.files.list(), []);
 	}
 
 	function get_file_list(request, result) {
