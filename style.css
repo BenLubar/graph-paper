@@ -1,7 +1,4 @@
 @import url(https://fonts.googleapis.com/css?family=Roboto:400,700);
-html {
-	overflow: hidden;
-}
 body {
 	font: 1em 'Roboto', sans-serif;
 	margin: 0;
