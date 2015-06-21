@@ -15,6 +15,7 @@ var gapi_client_load = function() {
 	var DEFAULT_TITLE = 'Untitled Graph Paper';
 
 	var view_changed = 0;
+	var file_by_id_fast = null;
 
 	function check_auth() {
 		gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': true}, handle_auth);
@@ -103,6 +104,12 @@ var gapi_client_load = function() {
 	}
 
 	function get_file_by_id(id, callback) {
+		if (file_by_id_fast && file_by_id_fast['id'] == id) {
+			var file = file_by_id_fast;
+			file_by_id_fast = null;
+			callback(file);
+			return;
+		}
 		gapi.client.drive.files.get({
 			'fileId': id
 		}).execute(callback);
@@ -217,6 +224,7 @@ var gapi_client_load = function() {
 	function open_document(file) {
 		var hash = '#edit/' + file['id'];
 		if (location.hash !== hash) {
+			file_by_id_fast = file;
 			location.hash = hash.substring(1);
 			return;
 		}
