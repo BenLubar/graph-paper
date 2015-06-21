@@ -181,7 +181,6 @@ var gapi_client_load = function() {
 		el.onclick = function() {
 			open_document(file);
 		};
-		console.log(el, file);
 	}
 
 	function new_document(callback) {
@@ -213,15 +212,15 @@ var gapi_client_load = function() {
 			},
 			'body': multipartRequestBody
 		});
-		if (!callback) {
-			callback = function(file) {
-				console.log(file);
-			};
-		}
 		request.execute(callback);
 	}
 
 	function open_document(file) {
+		if (file['error']) {
+			alert(file['error']['message']);
+			location.hash = '#';
+			return;
+		}
 		var hash = '#edit/' + file['id'];
 		if (location.hash !== hash) {
 			file_by_id_fast = file;
@@ -232,7 +231,6 @@ var gapi_client_load = function() {
 			if (location.hash !== hash) {
 				return;
 			}
-			console.log(file, data);
 		});
 		document.getElementById('document-title').textContent = file.title;
 	}
