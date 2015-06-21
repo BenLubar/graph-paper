@@ -75,11 +75,13 @@ var gapi_client_load = function() {
 
 		document.getElementById('main').style.display = 'none';
 		document.getElementById('viewport-container').style.display = 'none';
+		document.querySelector('html').style.overflow = 'auto';
 
 		var view_id = view_changed;
 		var matches;
 		if (matches = /^#edit\/(.*)$/.exec(location.hash)) {
 			document.getElementById('viewport-container').style.display = 'block';
+			document.querySelector('html').style.overflow = 'hidden';
 			status('retrieving-file-metadata', true);
 			get_file_by_id(matches[1], function(file) {
 				status('retrieving-file-metadata', false);
