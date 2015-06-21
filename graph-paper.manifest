@@ -1,10 +1,13 @@
 CACHE MANIFEST
-# 2015-06-20 r012
+# 2015-06-21 r011
 
 CACHE:
 style.css
 https://fonts.googleapis.com/css?family=Roboto:400,700
 graph-paper.js
+https://apis.google.com/js/api.js
+https://www.gstatic.com/realtime/realtime-client-utils.js
+https://apis.google.com/js/client.js?onload=gapi_client_load
 grid150.svg
 grid300.svg
 grid600.svg

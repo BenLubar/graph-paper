@@ -6,19 +6,40 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 ga('create', 'UA-41367436-1', 'auto');
 ga('send', 'pageview', {'page': '/graph-paper/'});
 
+window.applicationCache.onupdateready = function() {
+	location.reload();
+};
+
 var gapi_client_load = function() {
 	"use strict";
 
 	var CLIENT_ID = '477142404112-nupku65oo2pis2ajtdqobp53ek38dofc.apps.googleusercontent.com';
 	var SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.install'];
-	var MIME_TYPE = 'application/prs.benlubar-graphpaper+json';
 	var DEFAULT_TITLE = 'Untitled Graph Paper';
+	var CURRENT_VERSION = '0';
+
+	var realtime = new utils.RealtimeUtils({'clientId': CLIENT_ID, 'scopes': SCOPES, 'onError': function(error) {
+		if (error.type == window.gapi.drive.realtime.ErrorType.TOKEN_REFRESH_REQUIRED) {
+			realtime.authorizer.authorize(function() {
+				console.log('Error, auth refreshed');
+			}, false);
+		} else if (error.type == window.gapi.drive.realtime.ErrorType.CLIENT_ERROR) {
+			alert('An Error happened: ' + error.message);
+			window.location.hash = '';
+		} else if (error.type == window.gapi.drive.realtime.ErrorType.NOT_FOUND) {
+			alert('The file was not found. It does not exist or you do not have read access to the file.');
+			window.location.hash = '';
+		} else if (error.type == window.gapi.drive.realtime.ErrorType.FORBIDDEN) {
+			alert('You do not have access to this file. Try having the owner share it with you from Google Drive.');
+			window.location.hash = '';
+		}
+	}});
 
 	var view_changed = 0;
 	var file_by_id_fast = null;
 
 	function check_auth() {
-		gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': true}, handle_auth);
+		realtime.authorize(handle_auth, false);
 	}
 
 	function status(id, active) {
@@ -42,7 +63,7 @@ var gapi_client_load = function() {
 			status('need-auth', true);
 			button.style.display = 'block';
 			button.onclick = function() {
-				gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': false}, handle_auth);
+				realtime.authorize(handle_auth, true);
 			};
 		}
 	}
@@ -54,16 +75,31 @@ var gapi_client_load = function() {
 			new_document(open_document);
 		};
 
-		window.onhashchange = hash_changed;
-		hash_changed();
 		window.onresize = window_resized;
 		window_resized();
+		window.onhashchange = hash_changed;
+		hash_changed();
 	}
 
-	var repaint = function() {};
+	var close = null;
+	var repaint_ = function(ctx) {};
+	var repaint_handle = null;
+	var viewport = null;
+	function repaint() {
+		if (repaint_handle === null) {
+			repaint_handle = requestAnimationFrame(function() {
+				repaint_handle = null;
+				if (viewport) {
+					var ctx = viewport.getContext('2d');
+					ctx.clearRect(-1, -1, viewport.width + 1, viewport.height + 1);
+					repaint_(ctx);
+				}
+			});
+		}
+	}
 
 	function window_resized() {
-		var viewport = document.getElementById('viewport');
+		viewport = document.getElementById('viewport');
 		viewport.width = window.innerWidth;
 		viewport.height = window.innerHeight - 8 - 32 - 8;
 		repaint();
@@ -74,18 +110,24 @@ var gapi_client_load = function() {
 
 		ga('send', 'pageview', {'page': '/graph-paper/' + location.hash.replace(/^#/, '')});
 
+		document.title = 'Graph Paper';
 		document.getElementById('main').style.display = 'none';
 		document.getElementById('viewport-container').style.display = 'none';
 		document.querySelector('html').style.overflow = 'auto';
+
+		if (close) {
+			close();
+			close = null;
+		}
 
 		var view_id = view_changed;
 		var matches;
 		if (matches = /^#edit\/(.*)$/.exec(location.hash)) {
 			document.getElementById('viewport-container').style.display = 'block';
 			document.querySelector('html').style.overflow = 'hidden';
-			status('retrieving-file-metadata', true);
+			status('retrieving-metadata', true);
 			get_file_by_id(matches[1], function(file) {
-				status('retrieving-file-metadata', false);
+				status('retrieving-metadata', false);
 				if (view_changed === view_id) {
 					open_document(file);
 				}
@@ -104,7 +146,7 @@ var gapi_client_load = function() {
 	}
 
 	function get_file_by_id(id, callback) {
-		if (file_by_id_fast && file_by_id_fast['id'] == id) {
+		if (file_by_id_fast && file_by_id_fast['id'] === id) {
 			var file = file_by_id_fast;
 			file_by_id_fast = null;
 			callback(file);
@@ -184,35 +226,7 @@ var gapi_client_load = function() {
 	}
 
 	function new_document(callback) {
-		const boundary = '-------314159265358979323846';
-		const delimiter = "\r\n--" + boundary + "\r\n";
-		const close_delim = "\r\n--" + boundary + "--";
-
-		var metadata = {
-			'title': DEFAULT_TITLE,
-			'mimeType': MIME_TYPE
-		};
-
-		var multipartRequestBody = delimiter +
-			'Content-Type: application/json\r\n\r\n' +
-			JSON.stringify(metadata) +
-			delimiter +
-			'Content-Type: ' + MIME_TYPE + '\r\n' +
-			'Content-Transfer-Encoding: base64\r\n' +
-			'\r\n' +
-			btoa('{}') +
-			close_delim;
-
-		var request = gapi.client.request({
-			'path': '/upload/drive/v2/files',
-			'method': 'POST',
-			'params': {'uploadType': 'multipart'},
-			'headers': {
-				'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'
-			},
-			'body': multipartRequestBody
-		});
-		request.execute(callback);
+		realtime.createRealtimeFile(DEFAULT_TITLE, callback);
 	}
 
 	function open_document(file) {
@@ -227,32 +241,131 @@ var gapi_client_load = function() {
 			location.hash = hash.substring(1);
 			return;
 		}
-		download_document(file, function(data) {
+		status('downloading', true);
+		function document_ready(doc) {
+			status('downloading', false);
 			if (location.hash !== hash) {
 				return;
 			}
-		});
+
+			var grid_size = 128;
+			function mouse_to_paper(e) {
+				return [(e.offsetX - viewport.width / 2) / grid_size, (e.offsetY - viewport.height / 2) / grid_size];
+			}
+
+			function paper_to_mouse(xy) {
+				return [xy[0] * grid_size + viewport.width / 2, xy[1] * grid_size + viewport.height / 2];
+			}
+
+			var mouse_prev = null;
+			var stroke_index = null;
+			function mousedown(e) {
+				if (e.button === 0) {
+					var mouse = mouse_to_paper(e);
+					console.log('mouse down', e, mouse);
+					mouse_prev = mouse;
+					var index = strokes.push([mouse]) - 1;
+					stroke_index = strokes.registerReference(index, gapi.drive.realtime.IndexReference.DeleteMode.SHIFT_TO_INVALID);
+					viewport.addEventListener('mousemove', mousemove, false);
+				}
+			}
+
+			function mouseup(e) {
+				if (e.button === 0) {
+					console.log('mouse up', e);
+					mouse_prev = null;
+					stroke_index = null;
+					viewport.removeEventListener('mousemove', mousemove);
+				}
+			}
+
+			function mousemove(e) {
+				var mouse = mouse_to_paper(e);
+				if (mouse_prev[0] !== mouse[0] || mouse_prev[1] !== mouse[1]) {
+					var stroke = strokes.get(stroke_index.index);
+					strokes.set(stroke_index.index, stroke.concat([mouse]));
+					console.log('mouse move', e, mouse_prev, mouse);
+				}
+				mouse_prev = mouse;
+			}
+
+			var model = doc.getModel();
+			var root = model.getRoot();
+			var version = root.get('v');
+			var strokes = root.get('s');
+			viewport.addEventListener('mousedown', mousedown, false);
+			viewport.addEventListener('mouseup', mouseup, false);
+			repaint_ = function(ctx) {
+				viewport.style.backgroundImage = 'url(grid300.svg)';
+				var backgroundPosition = paper_to_mouse([0, 0]);
+				viewport.style.backgroundPosition = backgroundPosition[0] + 'px ' + backgroundPosition[1] + 'px';
+				viewport.style.backgroundSize = grid_size + 'px';
+				strokes.asArray().forEach(function(stroke) {
+					ctx.lineWidth = 2;
+					ctx.lineJoin = ctx.lineCap = 'round';
+					var first = true;
+					stroke.forEach(function(xy) {
+						var coord = paper_to_mouse(xy);
+						if (first) {
+							ctx.beginPath();
+							ctx.moveTo(coord[0], coord[1]);
+							first = false;
+						} else {
+							ctx.lineTo(coord[0], coord[1]);
+						}
+					});
+					ctx.stroke();
+				})
+			};
+			close = function() {
+				viewport.removeEventListener('mousedown', mousedown);
+				viewport.removeEventListener('mouseup', mouseup);
+				viewport.removeEventListener('mousemove', mousemove);
+				doc.removeAllEventListeners();
+				doc.close();
+				repaint_ = function(ctx) {};
+			};
+			if (version !== CURRENT_VERSION) {
+				console.log(version);
+				alert('expected version ' + JSON.stringify(CURRENT_VERSION) + ' but got version ' + JSON.stringify(version));
+				close();
+				close = null;
+				return;
+			}
+			repaint();
+
+			doc.addEventListener(gapi.drive.realtime.EventType.COLLABORATOR_JOINED, function(e) {
+				console.log('collaborator joined', e);
+			}, false);
+			doc.addEventListener(gapi.drive.realtime.EventType.COLLABORATOR_LEFT, function(e) {
+				console.log('collaborator left', e);
+			}, false);
+			doc.addEventListener(gapi.drive.realtime.EventType.DOCUMENT_SAVE_STATE_CHANGED, function(e) {
+				console.log('document save state changed', e);
+				status('saving', e.isSaving);
+			}, false);
+			doc.addEventListener(gapi.drive.realtime.EventType.ATTRIBUTE_CHANGED, function(e) {
+				console.log('attribute changed', e);
+			}, false);
+
+			model.addEventListener(gapi.drive.realtime.EventType.UNDO_REDO_STATE_CHANGED, function(e) {
+				console.log('undo redo state changed', e, 'canundo:', model.canUndo, 'canredo:', model.canRedo);
+			}, false);
+
+			root.addEventListener(gapi.drive.realtime.EventType.OBJECT_CHANGED, function(e) {
+				console.log('object changed', e);
+				repaint();
+			}, false);
+		}
+		realtime.load(file['id'], document_ready, init_realtime_document);
 		document.getElementById('document-title').textContent = file.title;
+		document.title = file.title + ' - Graph Paper';
 	}
 
-	function download_document(file, callback) {
-		if (file['downloadUrl']) {
-			status('downloading-file-data', true);
-			var xhr = new XMLHttpRequest();
-			xhr.open('GET', file['downloadUrl']);
-			xhr.setRequestHeader('Authorization', 'Bearer ' + gapi.auth.getToken().access_token);
-			xhr.onload = function() {
-				status('downloading-file-data', false);
-				callback(JSON.parse(xhr.responseText));
-			};
-			xhr.onerror = function() {
-				status('downloading-file-data', false);
-				callback(null);
-			};
-			xhr.send();
-		} else {
-			callback(null);
-		}
+	function init_realtime_document(model) {
+		var root = model.getRoot();
+		root.set('v', CURRENT_VERSION);
+		root.set('s', model.createList());
 	}
 
 	return function() {

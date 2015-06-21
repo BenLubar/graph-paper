@@ -6,6 +6,8 @@
 <title>Graph Paper</title>
 <link rel="canonical" href="https://benlubar.github.io/graph-paper/">
 <link rel="stylesheet" href="style.css" type="text/css">
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://www.gstatic.com/realtime/realtime-client-utils.js"></script>
 <script src="graph-paper.js"></script>
 <script src="https://apis.google.com/js/client.js?onload=gapi_client_load"></script>
 </head>
@@ -16,8 +18,9 @@
 <div id="status-need-auth">You need to authorize Graph Paper before it can create files in your Google Drive.</div>
 <div id="status-connecting">Connecting...</div>
 <div id="status-loading-file-list">Loading file list...</div>
-<div id="status-retrieving-file-metadata">Retrieving file metadata...</div>
-<div id="status-downloading-file-data">Downloading file data...</div>
+<div id="status-retrieving-metadata">Retrieving metadata...</div>
+<div id="status-downloading">Downloading...</div>
+<div id="status-saving">Saving...</div>
 </aside>
 
 <header><h1><a href="#">Graph Paper</a></h1></header>
