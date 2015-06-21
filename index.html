@@ -1,72 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html manifest="graph-paper.manifest">
 <head>
 <meta charset="utf-8">
 <title>Graph Paper</title>
 <link rel="canonical" href="https://benlubar.github.io/graph-paper/">
-<script>
-var gapi_client_load = function() {
-	var CLIENT_ID = '477142404112-nupku65oo2pis2ajtdqobp53ek38dofc.apps.googleusercontent.com';
-	var SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.install'];
-
-	function check_auth() {
-		gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': true}, handle_auth);
-	}
-
-	function handle_auth(result) {
-		var button = document.getElementById('authorize');
-		button.style.display = 'none';
-		if (result && !result.error) {
-			// Access token has been successfully retrieved, requests can be sent to the API.
-			gapi.client.load('drive', 'v2', ready);
-		} else {
-			// No access token could be retrieved, show the button to start the authorization flow.
-			button.style.display = 'block';
-			button.onclick = function() {
-				gapi.auth.authorize({'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': false}, handle_auth);
-			};
-		}
-	}
-
-	function ready() {
-		get_file_list(gapi.client.drive.files.list(), []);
-	}
-
-	function get_file_list(request, result) {
-		request.execute(function(response) {
-			result = result.concat(response.items);
-			if (response['nextPageToken']) {
-				request = gapi.client.drive.files.list({
-					'pageToken': response['nextPagetoken']
-				});
-				get_file_list(request, result);
-			} else {
-				got_file_list(result);
-			}
-		});
-	}
-
-	function got_file_list(files) {
-		console.log(files);
-	}
-
-	return function() {
-		setTimeout(check_auth, 1);
-	};
-}();
-</script>
+<link rel="stylesheet" href="style.css" type="text/css">
+<script src="graph-paper.js"></script>
 <script src="https://apis.google.com/js/client.js?onload=gapi_client_load"></script>
 </head>
 <body>
-<button id="authorize" style="display: none">Authorize</button>
-<script>
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+<aside id="status">
+<div id="status-init">Initializing...</div>
+<noscript>You need JavaScript enabled to use Graph Paper.</noscript>
+<div id="status-need-auth">You need to authorize Graph Paper before it can create files in your Google Drive.</div>
+<div id="status-connecting">Connecting...</div>
+<div id="status-loading-file-list">Loading file list...</div>
+<div id="status-retrieving-file-metadata">Retrieving file metadata...</div>
+<div id="status-downloading-file-data">Downloading file data...</div>
+</aside>
 
-ga('create', 'UA-41367436-1', 'auto');
-ga('send', 'pageview');
-</script>
+<header><h1><a href="#">Graph Paper</a></h1></header>
+
+<button id="authorize">Authorize</button>
+
+<section id="main">
+<button id="new">New</button>
+<table id="file-list-container">
+<thead>
+<tr><th>Title</th><th>Last Modified</th></tr>
+</thead>
+<tbody id="file-list"></tbody>
+</table>
+</section>
+
+<section id="viewport-container">
+<div id="viewport-overlay">
+	<h2 id="document-title"></h2>
+</div>
+<canvas id="viewport"></canvas>
+</section>
 </body>
 </html>

@@ -1,0 +1,14 @@
+CACHE MANIFEST
+# 2015-06-20 r009
+
+CACHE:
+style.css
+http://fonts.googleapis.com/css?family=Roboto:400,700
+graph-paper.js
+grid150.svg
+grid300.svg
+grid600.svg
+grid1200.svg
+
+NETWORK:
+*

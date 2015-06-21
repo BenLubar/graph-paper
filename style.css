@@ -1,0 +1,64 @@
+@import url(http://fonts.googleapis.com/css?family=Roboto:400,700);
+html {
+	overflow: hidden;
+}
+body {
+	font: 1em 'Roboto', sans-serif;
+	margin: 0;
+}
+input, button {
+	font: inherit;
+}
+header h1 {
+	margin: 0;
+}
+header a {
+	text-decoration: none;
+	display: block;
+	padding: 8px 20px;
+	color: #000;
+	text-shadow: 0 0 5px #fff;
+	box-shadow: 0 0 15px #ddd;
+	font-size: 32px;
+	line-height: 32px;
+	background-color: #fff;
+	background-image: url(grid150.svg);
+	background-size: 15px;
+}
+#authorize, section {
+	display: none;
+	margin: 10px 8px 0;
+}
+#status {
+	position: fixed;
+	right: 5px;
+	top: 5px;
+	background: #bf6;
+	color: #000;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+#status > div {
+	display: none;
+	padding: 5px;
+}
+#status > #status-init {
+	display: block;
+}
+#file-list-container {
+	width: 100%;
+}
+.file > .title {
+	cursor: pointer;
+}
+#viewport-container {
+	margin: 0;
+}
+#viewport-overlay {
+	position: absolute;
+	z-index: 1;
+	pointer-events: none;
+	margin: 8px;
+}
+#viewport-overlay h2 {
+	margin: 0;
+}

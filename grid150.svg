@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" width="150px" height="150px" viewBox="0 0 150 150">
+<line x1="-15" x2="150" y1="75" y2="75" stroke="#6bf" stroke-width="20" stroke-linecap="round" stroke-dasharray="1, 29"/>
+<line x1="75" x2="75" y1="-15" y2="150" stroke="#6bf" stroke-width="20" stroke-linecap="round" stroke-dasharray="1, 29"/>
+</svg>
